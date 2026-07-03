@@ -727,6 +727,8 @@ function drawEntities(game, tMs) {
     const fresh = performance.now() - ent.lastSeen < 700;
     ent.alpha = Math.max(0, Math.min(1, (ent.alpha || 0) + (fresh ? 0.1 : -0.1)));
     if (ent.alpha <= 0.02) continue;
+    // impostors see their partners' names in red (crew clients never get this info)
+    const impRed = game.isImpostor && game.partners.includes(pid);
     list.push({
       y: pos.y,
       draw: () => {
@@ -737,7 +739,7 @@ function drawEntities(game, tMs) {
           walkPhase: tMs / 55, ghost: ent.dead, alpha: ent.alpha,
           cbLetter: cb, t: tMs,
         });
-        nameplate(pos.x, pos.y, pl, ent);
+        nameplate(pos.x, pos.y, pl, ent, false, impRed);
       },
     });
   }
@@ -754,7 +756,7 @@ function drawEntities(game, tMs) {
           facing: game.facing, moving: game.movingNow, walkPhase: game.walkPhase,
           ghost: !y.alive, cbLetter: cb, t: tMs, shielded: game.youShielded,
         });
-        nameplate(y.x, y.y, youPl, null, true);
+        nameplate(y.x, y.y, youPl, null, true, game.isImpostor);
       },
     });
   }
@@ -775,12 +777,13 @@ function drawEntities(game, tMs) {
   }
 }
 
-function nameplate(x, y, pl, ent, isYou = false) {
+function nameplate(x, y, pl, ent, isYou = false, impRed = false) {
   const dead = ent ? ent.dead : false;
   ctx.font = '700 15px "Segoe UI", sans-serif';
   ctx.textAlign = 'center';
   const plate = pl.cosmetics.plate;
   ctx.fillStyle =
+    impRed ? '#ff2e3f' :  // impostor-only red, like the real thing
     plate === 'gold' ? '#ffd23e' :
     plate === 'neon' ? '#55f2c4' :
     plate === 'hazard' ? '#ffb340' :

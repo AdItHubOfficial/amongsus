@@ -148,6 +148,10 @@ function renderCards() {
 
     const name = el('span', 'meet-name', p.name + (p.isBot ? ' 🤖' : ''));
     if (p.pid === current.reporter) name.textContent += ' 📢';
+    // impostors see their own and their partners' names in red
+    if (g.isImpostor && (p.pid === g.youPid || g.partners.includes(p.pid))) {
+      name.style.color = '#ff2e3f';
+    }
     card.appendChild(name);
 
     const sub = el('span', 'meet-sub');
