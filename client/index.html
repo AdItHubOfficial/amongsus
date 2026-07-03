@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AMONGSUS — Deep Space Deception</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='42' fill='%232f7de1'/><ellipse cx='58' cy='40' rx='22' ry='14' fill='%23aee6ff'/></svg>">
+<link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+<canvas id="stars-bg"></canvas>
+
+<div id="app">
+
+  <!-- ============================ LOADING ============================ -->
+  <section id="screen-loading" class="screen active">
+    <div class="loading-inner">
+      <div class="logo-big anim-float">AMONG<span>SUS</span></div>
+      <div class="loading-sub" data-i18n="tagline">Trust no one aboard the ISV Meridian</div>
+      <div class="loading-bar"><div id="loading-fill"></div></div>
+    </div>
+  </section>
+
+  <!-- ============================ MAIN MENU ============================ -->
+  <section id="screen-menu" class="screen">
+    <div class="menu-inner">
+      <div class="logo-big anim-float">AMONG<span>SUS</span></div>
+      <div class="menu-tag" data-i18n="tagline">Trust no one aboard the ISV Meridian</div>
+
+      <input id="inp-name" maxlength="14" placeholder="Your name" autocomplete="off">
+
+      <div class="menu-buttons">
+        <button id="btn-host" class="btn btn-primary big" data-tip="Create a new lobby and invite friends with the code">HOST GAME</button>
+        <div class="join-row">
+          <input id="inp-code" maxlength="5" placeholder="CODE" autocomplete="off">
+          <button id="btn-join" class="btn btn-primary" data-tip="Join a friend's lobby by code">JOIN</button>
+        </div>
+        <button id="btn-browse" class="btn" data-tip="Browse public lobbies">PUBLIC GAMES</button>
+        <button id="btn-practice" class="btn" data-tip="Explore the ship and try tasks solo">PRACTICE</button>
+        <button id="btn-rejoin" class="btn btn-warn hidden">REJOIN GAME</button>
+      </div>
+
+      <div class="menu-row2">
+        <button id="btn-customize" class="btn btn-ghost" data-tip="Colors, hats, pets, skins">🎨 <span data-i18n="customize">Customize</span></button>
+        <button id="btn-profile" class="btn btn-ghost" data-tip="Level, stats, achievements, daily challenges">🏅 <span data-i18n="profile">Profile</span></button>
+        <button id="btn-settings-menu" class="btn btn-ghost" data-tip="Audio, video, controls, accessibility">⚙️ <span data-i18n="settings">Settings</span></button>
+        <button id="btn-how" class="btn btn-ghost" data-tip="How to play">❓ <span data-i18n="how">How to Play</span></button>
+      </div>
+      <div class="menu-level" id="menu-level"></div>
+    </div>
+  </section>
+
+  <!-- ============================ LOBBY ============================ -->
+  <section id="screen-lobby" class="screen">
+    <div class="lobby-grid">
+      <header class="lobby-header panel-glass">
+        <div class="lobby-title">LOBBY</div>
+        <div class="code-box">
+          <span id="lobby-code" class="code-text">-----</span>
+          <button id="btn-copy-code" class="btn btn-small" data-tip="Copy invite code">COPY</button>
+        </div>
+        <label class="toggle-label" id="public-wrap"><input type="checkbox" id="chk-public"> <span data-i18n="public">Public</span></label>
+        <div id="lobby-count" class="lobby-count">0/15</div>
+        <div id="lobby-ping" class="ping-chip">-- ms</div>
+      </header>
+
+      <div class="lobby-players panel-glass">
+        <div class="panel-head">
+          <h3 data-i18n="players">Players</h3>
+          <button id="btn-add-bot" class="btn btn-small hidden" data-tip="Add an AI crewmate — bots do tasks, vote, and can even be the impostor">🤖 ADD AI</button>
+        </div>
+        <ul id="lobby-players"></ul>
+      </div>
+
+      <div class="lobby-chat panel-glass">
+        <h3 data-i18n="chat">Chat</h3>
+        <div id="lobby-chat-log" class="chat-log"></div>
+        <div class="emoji-row" id="lobby-emoji-row"></div>
+        <div class="chat-input-row">
+          <input id="lobby-chat-input" maxlength="120" placeholder="Say something…" autocomplete="off">
+          <button id="btn-chat-send" class="btn btn-small">➤</button>
+        </div>
+      </div>
+
+      <div class="lobby-settings panel-glass">
+        <h3 data-i18n="matchSettings">Match Settings</h3>
+        <div id="lobby-settings"></div>
+      </div>
+
+      <footer class="lobby-footer panel-glass">
+        <button id="btn-lobby-customize" class="btn btn-ghost">🎨</button>
+        <button id="btn-ready" class="btn btn-primary big">READY</button>
+        <button id="btn-start" class="btn btn-go big hidden">START GAME</button>
+        <button id="btn-leave-lobby" class="btn btn-danger">LEAVE</button>
+      </footer>
+    </div>
+  </section>
+
+  <!-- ============================ GAME ============================ -->
+  <section id="screen-game" class="screen">
+    <canvas id="game-canvas"></canvas>
+
+    <div id="hud">
+      <div id="hud-topleft">
+        <div id="hud-taskbar-wrap" class="panel-glass">
+          <div class="taskbar-label"><span data-i18n="totalTasks">TOTAL TASKS</span></div>
+          <div class="taskbar"><div id="hud-taskbar"></div></div>
+        </div>
+        <div id="hud-tasks" class="panel-glass"></div>
+      </div>
+
+      <div id="hud-topright">
+        <div id="hud-ping" class="ping-chip">-- ms</div>
+        <button id="btn-pause" class="btn btn-ghost btn-icon" data-tip="Menu (Esc)">☰</button>
+      </div>
+
+      <div id="hud-role" class="hidden"></div>
+      <div id="hud-sabotage" class="hidden"></div>
+      <div id="hud-ghost" class="hidden">👻 <span data-i18n="ghostHint">You're a ghost — finish your tasks! Walls can't stop you.</span></div>
+
+      <div id="hud-actions">
+        <button id="btn-sabotage" class="hud-btn hb-sab hidden" data-tip="Sabotage (Q)"><span class="hb-ico">☠</span><span class="hb-cd"></span></button>
+        <button id="btn-vent" class="hud-btn hb-vent hidden" data-tip="Vent (V)"><span class="hb-ico">▼</span><span class="hb-cd"></span></button>
+        <button id="btn-kill" class="hud-btn hb-kill hidden" data-tip="Eliminate (Q)"><span class="hb-ico">🗡</span><span class="hb-cd"></span></button>
+        <button id="btn-ability" class="hud-btn hb-ability hidden" data-tip="Ability (F)"><span class="hb-ico">✚</span><span class="hb-cd"></span></button>
+        <button id="btn-report" class="hud-btn hb-report" disabled data-tip="Report body (R)"><span class="hb-ico">📢</span></button>
+        <button id="btn-use" class="hud-btn hb-use" disabled data-tip="Use (E)"><span class="hb-ico">✋</span><span class="hb-cd"></span></button>
+      </div>
+      <div id="hud-actions-left">
+        <button id="btn-map" class="hud-btn hb-small" data-tip="Map (M)">🗺</button>
+        <button id="btn-emote" class="hud-btn hb-small" data-tip="Emotes (T)">😀</button>
+      </div>
+
+      <div id="joystick" class="hidden"><div id="joystick-stick"></div></div>
+    </div>
+
+    <!-- Task / fix mini-game modal -->
+    <div id="overlay-task" class="overlay hidden">
+      <div class="modal-box task-box">
+        <div class="task-head">
+          <span id="task-title">Task</span>
+          <button id="btn-task-close" class="btn btn-small btn-danger">✕</button>
+        </div>
+        <div id="task-root"></div>
+      </div>
+    </div>
+
+    <!-- Meeting -->
+    <div id="overlay-meeting" class="overlay hidden">
+      <div class="meeting-box panel-glass">
+        <div class="meeting-head">
+          <div id="meeting-reason">EMERGENCY MEETING</div>
+          <div id="meeting-phase-label"></div>
+          <div id="meeting-timer">00</div>
+        </div>
+        <div class="meeting-main">
+          <div id="meeting-cards"></div>
+          <div class="meeting-chat">
+            <div id="meeting-chat-log" class="chat-log"></div>
+            <div class="emoji-row" id="meeting-emoji-row"></div>
+            <div class="chat-input-row">
+              <input id="meeting-chat-input" maxlength="120" placeholder="Discuss…" autocomplete="off">
+              <button id="btn-meeting-send" class="btn btn-small">➤</button>
+            </div>
+          </div>
+        </div>
+        <div class="meeting-foot">
+          <span id="meeting-voted-label"></span>
+          <button id="btn-skip-vote" class="btn btn-warn hidden">SKIP VOTE</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Map overlay -->
+    <div id="overlay-map" class="overlay hidden">
+      <div class="modal-box map-box">
+        <div class="task-head"><span data-i18n="shipMap">ISV MERIDIAN — DECK MAP</span>
+          <button id="btn-map-close" class="btn btn-small btn-danger">✕</button></div>
+        <canvas id="map-canvas" width="860" height="530"></canvas>
+      </div>
+    </div>
+
+    <!-- Impostor sabotage menu -->
+    <div id="overlay-sab" class="overlay hidden">
+      <div class="modal-box sab-box">
+        <div class="task-head"><span data-i18n="sabotage">SABOTAGE</span>
+          <button id="btn-sab-close" class="btn btn-small btn-danger">✕</button></div>
+        <div class="sab-grid">
+          <button class="btn sab-btn" data-sab="reactor">☢ Reactor Meltdown</button>
+          <button class="btn sab-btn" data-sab="o2">💨 Oxygen Depletion</button>
+          <button class="btn sab-btn" data-sab="lights">💡 Lighting Failure</button>
+          <button class="btn sab-btn" data-sab="comms">📡 Comms Offline</button>
+          <button class="btn sab-btn" data-sab="cameras">📷 Disable Cameras</button>
+        </div>
+        <h4 data-i18n="lockDoors">LOCK DOORS</h4>
+        <div id="sab-doors" class="sab-doors"></div>
+      </div>
+    </div>
+
+    <!-- Security cameras -->
+    <div id="overlay-cams" class="overlay hidden">
+      <div class="modal-box cams-box">
+        <div class="task-head"><span data-i18n="security">SECURITY FEED</span>
+          <button id="btn-cams-close" class="btn btn-small btn-danger">✕</button></div>
+        <canvas id="cams-canvas" width="880" height="560"></canvas>
+      </div>
+    </div>
+
+    <!-- Emote wheel -->
+    <div id="overlay-emotes" class="overlay hidden">
+      <div id="emote-wheel"></div>
+    </div>
+
+    <!-- Vent navigation -->
+    <div id="overlay-vent" class="hidden">
+      <div id="vent-arrows"></div>
+      <button id="btn-vent-exit" class="btn btn-warn">EXIT VENT (V)</button>
+    </div>
+  </section>
+
+  <!-- ============================ GLOBAL OVERLAYS ============================ -->
+
+  <div id="overlay-cutscene" class="overlay hidden">
+    <canvas id="cutscene-canvas"></canvas>
+    <div class="cutscene-text-wrap">
+      <div id="cutscene-text"></div>
+      <div id="cutscene-sub"></div>
+    </div>
+  </div>
+
+  <div id="overlay-results" class="overlay hidden">
+    <div class="results-box panel-glass">
+      <div id="results-title">VICTORY</div>
+      <div id="results-sub"></div>
+      <div id="results-players"></div>
+      <div class="results-xp">
+        <div class="xp-row"><span id="xp-label">+0 XP</span><span id="xp-level"></span></div>
+        <div class="xp-bar"><div id="xp-fill"></div></div>
+        <div id="results-achievements"></div>
+      </div>
+      <button id="btn-results-continue" class="btn btn-primary big">CONTINUE</button>
+    </div>
+  </div>
+
+  <div id="overlay-settings" class="overlay hidden">
+    <div class="modal-box settings-box">
+      <div class="task-head"><span data-i18n="settings">SETTINGS</span>
+        <button id="btn-settings-close" class="btn btn-small btn-danger">✕</button></div>
+      <div class="settings-tabs">
+        <button class="tab-btn active" data-tab="audio" data-i18n="audio">Audio</button>
+        <button class="tab-btn" data-tab="video" data-i18n="video">Video</button>
+        <button class="tab-btn" data-tab="controls" data-i18n="controls">Controls</button>
+        <button class="tab-btn" data-tab="access" data-i18n="access">Accessibility</button>
+      </div>
+      <div class="tab-pane active" data-pane="audio">
+        <label class="set-row"><span data-i18n="volMaster">Master Volume</span><input type="range" id="set-vol-master" min="0" max="100"></label>
+        <label class="set-row"><span data-i18n="volMusic">Music</span><input type="range" id="set-vol-music" min="0" max="100"></label>
+        <label class="set-row"><span data-i18n="volSfx">Effects</span><input type="range" id="set-vol-sfx" min="0" max="100"></label>
+      </div>
+      <div class="tab-pane" data-pane="video">
+        <label class="set-row"><span data-i18n="graphics">Graphics Quality</span>
+          <select id="set-graphics"><option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>
+        <label class="set-row"><span data-i18n="fpsLimit">FPS Limit</span>
+          <select id="set-fps"><option value="30">30</option><option value="60">60</option><option value="120">120</option><option value="0">Uncapped</option></select></label>
+        <label class="set-row"><span data-i18n="screenShake">Screen Shake</span><input type="checkbox" id="set-shake"></label>
+        <div class="set-row"><span data-i18n="fullscreen">Fullscreen</span><button id="btn-fullscreen" class="btn btn-small">Toggle</button></div>
+      </div>
+      <div class="tab-pane" data-pane="controls">
+        <div id="keybind-list"></div>
+        <p class="set-hint" data-i18n="moveHint">Move with WASD or Arrow Keys. Click a binding to rebind.</p>
+      </div>
+      <div class="tab-pane" data-pane="access">
+        <label class="set-row"><span data-i18n="colorblind">Colorblind Mode (letter badges)</span><input type="checkbox" id="set-colorblind"></label>
+        <label class="set-row"><span data-i18n="reduceFlash">Reduce Flashing</span><input type="checkbox" id="set-reduceflash"></label>
+        <label class="set-row"><span data-i18n="language">Language</span>
+          <select id="set-lang"><option value="en">English</option><option value="es">Español</option></select></label>
+      </div>
+    </div>
+  </div>
+
+  <div id="overlay-pause" class="overlay hidden">
+    <div class="modal-box pause-box">
+      <h2>PAUSED</h2>
+      <button id="btn-resume" class="btn btn-primary big">RESUME</button>
+      <button id="btn-pause-settings" class="btn big">SETTINGS</button>
+      <button id="btn-pause-leave" class="btn btn-danger big">LEAVE GAME</button>
+    </div>
+  </div>
+
+  <div id="overlay-reconnect" class="overlay hidden">
+    <div class="modal-box">
+      <div class="spinner"></div>
+      <p data-i18n="reconnecting">Reconnecting to the Meridian…</p>
+    </div>
+  </div>
+
+  <!-- Menu side panels -->
+  <div id="panel-customize" class="overlay hidden">
+    <div class="modal-box customize-box">
+      <div class="task-head"><span data-i18n="customize">Customize</span>
+        <button class="btn btn-small btn-danger panel-close">✕</button></div>
+      <div class="customize-grid">
+        <canvas id="preview-canvas" width="220" height="280"></canvas>
+        <div class="customize-lists">
+          <h4 data-i18n="color">Color</h4><div id="grid-colors" class="cos-grid"></div>
+          <h4 data-i18n="hat">Hat</h4><div id="grid-hats" class="cos-grid"></div>
+          <h4 data-i18n="pet">Pet</h4><div id="grid-pets" class="cos-grid"></div>
+          <h4 data-i18n="skin">Skin</h4><div id="grid-skins" class="cos-grid"></div>
+          <h4 data-i18n="nameplate">Nameplate</h4><div id="grid-plates" class="cos-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="panel-profile" class="overlay hidden">
+    <div class="modal-box profile-box">
+      <div class="task-head"><span data-i18n="profile">Profile</span>
+        <button class="btn btn-small btn-danger panel-close">✕</button></div>
+      <div class="profile-top">
+        <div id="profile-level" class="level-badge">1</div>
+        <div class="profile-xp">
+          <div class="xp-bar"><div id="profile-xpfill"></div></div>
+          <div id="profile-xptext">0 / 100 XP</div>
+        </div>
+      </div>
+      <h4 data-i18n="stats">Statistics</h4>
+      <div id="profile-stats" class="stats-grid"></div>
+      <h4 data-i18n="dailies">Daily Challenges</h4>
+      <div id="list-dailies"></div>
+      <h4 data-i18n="achievements">Achievements</h4>
+      <div id="grid-achievements"></div>
+    </div>
+  </div>
+
+  <div id="panel-browse" class="overlay hidden">
+    <div class="modal-box browse-box">
+      <div class="task-head"><span data-i18n="publicGames">Public Games</span>
+        <button class="btn btn-small btn-danger panel-close">✕</button></div>
+      <button id="btn-browse-refresh" class="btn btn-small">↻ Refresh</button>
+      <div id="browse-list"></div>
+    </div>
+  </div>
+
+  <div id="panel-how" class="overlay hidden">
+    <div class="modal-box how-box">
+      <div class="task-head"><span data-i18n="how">How to Play</span>
+        <button class="btn btn-small btn-danger panel-close">✕</button></div>
+      <div class="how-content">
+        <p><b>Crew:</b> complete every task on the ISV Meridian, or find the impostors and vote them out at meetings.</p>
+        <p><b>Impostors:</b> eliminate the crew without getting caught. Fake tasks, slip through vents, sabotage systems and lock doors.</p>
+        <p><b>Meetings:</b> report a body (R) or hit the emergency console in the Atrium. Discuss, then vote — the majority is ejected from the airlock.</p>
+        <p><b>Sabotage:</b> reactor and oxygen failures must be fixed before the timer runs out or the impostors win. Lights shrink crew vision; comms hide tasks.</p>
+        <p><b>Ghosts:</b> eliminated crew keep helping — finish your tasks from beyond, and chat with other ghosts.</p>
+        <p><b>Controls:</b> WASD/arrows move · E use · R report · Q kill/sabotage · V vent · F ability · M map · T emotes · Esc menu.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast-container"></div>
+<div id="tooltip" class="hidden"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script type="module" src="/js/main.js"></script>
+</body>
+</html>
